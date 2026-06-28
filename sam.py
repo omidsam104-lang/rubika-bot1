@@ -5,13 +5,12 @@ from datetime import datetime, timedelta
 TOKEN = "BIBDIH0ALVYLUZEPQNKQSTGGWYWLYBESCODHFEBDXAASBSVLIIOEOWPUNMEYXPJB"
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-last_update_id = None
+last_event_id = None
 
 
 def get_game_mode():
     now = datetime.now()
 
-    # شروع چرخه از ساعت 19:30
     start = now.replace(
         hour=19,
         minute=30,
@@ -19,8 +18,6 @@ def get_game_mode():
         microsecond=0
     )
 
-    # اگر قبل از 19:30 امروز باشیم،
-    # چرخه از روز قبل حساب می‌شود
     if now < start:
         start -= timedelta(days=1)
 
@@ -31,40 +28,61 @@ def get_game_mode():
         "🎮 گیم مود فعلی: ۵ نفره"
     ]
 
-    # هر 120 دقیقه (2 ساعت) یک گیم مود
-    elapsed = (now - start).total_seconds() // 60
-    index = int(elapsed // 120) % len(modes)
+    elapsed_minutes = (
+        now - start
+    ).total_seconds() // 60
+
+    index = int(
+        elapsed_minutes // 120
+    ) % len(modes)
 
     return modes[index]
 
 
-print("🤖 ربات گیم مود فعال شد")
+print("🤖 Rubika Bot Started...")
 
 while True:
     try:
-        data = {"limit": 10}
+        payload = {
+            "limit": 10
+        }
 
-        if last_update_id:
-            data["start_id"] = last_update_id
+        if last_event_id:
+            payload["start_id"] = last_event_id
 
         response = requests.post(
             API_URL + "getUpdates",
-            json=data,
+            json=payload,
             timeout=20
         )
 
         result = response.json()
+        print(result)
 
         if "data" in result:
             for update in result["data"]:
 
-                last_update_id = update.get("event_id")
+                last_event_id = update.get(
+                    "event_id"
+                )
 
                 if "message" not in update:
                     continue
 
-                chat_id = update["message"]["chat_id"]
-                text = update["message"].get("text", "").strip()
+                message = update["message"]
+
+                chat_id = message.get(
+                    "chat_id"
+                )
+
+                text = message.get(
+                    "text", ""
+                ).strip()
+
+                print(
+                    "پیام:",
+                    text
+                )
 
                 if text in [
                     "گیم مود",
@@ -78,11 +96,12 @@ while True:
                         json={
                             "chat_id": chat_id,
                             "text": get_game_mode()
-                        }
+                        },
+                        timeout=20
                     )
 
                     print(
-                        f"ارسال شد: {chat_id}"
+                        "گیم مود ارسال شد"
                     )
 
         time.sleep(2)
