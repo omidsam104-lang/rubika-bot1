@@ -1,33 +1,42 @@
-from datetime import datetime, timedelta
 import time
+import requests
 
+TOKEN = "BIBDIH0ALVYLUZEPQNKQSTGGWYWLYBESCODHFEBDXAASBSVLIIOEOWPUNMEYXPJB"
 
-def get_game_mode():
-    now = datetime.now()
+URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-    # زمان شروع چرخه
-    start_time = now.replace(hour=19, minute=30, second=0, microsecond=0)
-
-    game_modes = [
-        "🎮 گیم مود فعلی: ۲ به ۲",
-        "🎮 گیم مود فعلی: ۳ نفره",
-        "🎮 گیم مود فعلی: ۳ به ۳",
-        "🎮 گیم مود فعلی: ۵ نفره"
-    ]
-
-    # اگر قبل از ساعت ۱۹:۳۰ باشد، یک روز به عقب برگرد
-    if now < start_time:
-        start_time -= timedelta(days=1)
-
-    # محاسبه زمان سپری‌شده
-    elapsed_minutes = (now - start_time).total_seconds() / 60
-
-    # هر ۱۲۰ دقیقه یک گیم مود عوض می‌شود
-    index = int(elapsed_minutes // 120) % len(game_modes)
-
-    return game_modes[index]
-
+last_id = None
 
 while True:
-    print(get_game_mode())
-    time.sleep(60)
+    try:
+        data = {
+            "limit": 10
+        }
+
+        if last_id:
+            data["start_id"] = last_id
+
+        r = requests.post(URL + "getUpdates", json=data)
+        result = r.json()
+
+        if result.get("data"):
+            for update in result["data"]:
+                last_id = update.get("event_id")
+
+                text = update["message"].get("text", "")
+                chat_id = update["message"]["chat_id"]
+
+                if text == "گیم مود":
+                    requests.post(
+                        URL + "sendMessage",
+                        json={
+                            "chat_id": chat_id,
+                            "text": "🎮 گیم مود فعلی:\n🔥 نبرد ۳ نفره"
+                        }
+                    )
+
+        time.sleep(3)
+
+    except Exception as e:
+        print(e)
+        time.sleep(5)
