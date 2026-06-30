@@ -1,92 +1,53 @@
 import requests
 import time
-from datetime import datetime, timedelta
 
 TOKEN = "BIBDIH0SCWTOUMNTTDUXFMRJSFHLCWVFFAUWITUVUIOJAICHDZFOWYSRYHOFOQLW"
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
 last_event_id = None
 
-
-def get_game_mode():
-    now = datetime.now()
-
-    start = now.replace(
-        hour=19,
-        minute=30,
-        second=0,
-        microsecond=0
-    )
-
-    if now < start:
-        start -= timedelta(days=1)
-
-    modes = [
-        "🎮 گیم مود فعلی: ۲ به ۲",
-        "🎮 گیم مود فعلی: ۳ نفره",
-        "🎮 گیم مود فعلی: ۳ به ۳",
-        "🎮 گیم مود فعلی: ۵ نفره"
-    ]
-
-    elapsed_minutes = int(
-        (now - start).total_seconds() // 60
-    )
-
-    index = (elapsed_minutes // 120) % len(modes)
-
-    return modes[index]
-
-
-print("🤖 Rubika Game Mode Bot Started")
+print("🤖 Bot Started")
 
 while True:
     try:
+        payload = {"limit": 10}
+
+        if last_event_id:
+            payload["start_id"] = last_event_id
+
         response = requests.post(
             API_URL + "getUpdates",
-            json={
-                "limit": 10
-            },
+            json=payload,
             timeout=20
         )
 
         result = response.json()
-
-        print("API:", result)
+        print(result)
 
         if "data" in result:
             for update in result["data"]:
 
-                if update.get("event_id"):
-                    last_event_id = update["event_id"]
+                last_event_id = update.get("event_id")
 
-                message = update.get("message")
-                if not message:
+                if "message" not in update:
                     continue
 
+                message = update["message"]
                 chat_id = message.get("chat_id")
-                text = message.get("text", "").strip()
+                text = message.get("text", "")
 
-                print("پیام:", text)
+                print("پیام دریافت شد:", text)
 
-                if text in [
-                    "گیم مود",
-                    "گیم‌مود",
-                    "gamemode",
-                    "/game"
-                ]:
+                requests.post(
+                    API_URL + "sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": "ربات فعال است ✅"
+                    },
+                    timeout=20
+                )
 
-                    answer = get_game_mode()
-
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text": answer
-                        },
-                        timeout=20
-                    )
-
-                    print("ارسال شد:", answer)
+                print("پیام ارسال شد")
 
         time.sleep(2)
 
