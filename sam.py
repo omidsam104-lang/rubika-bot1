@@ -6,7 +6,7 @@ API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
 last_event_id = None
 
-print("🤖 Bot Started")
+print("🤖 MetaTank Bot Started")
 
 while True:
     try:
@@ -34,20 +34,25 @@ while True:
 
                 message = update["message"]
                 chat_id = message.get("chat_id")
-                text = message.get("text", "")
+                text = message.get("text", "").strip()
 
-                print("پیام دریافت شد:", text)
+                print("پیام:", text)
 
-                requests.post(
-                    API_URL + "sendMessage",
-                    json={
-                        "chat_id": chat_id,
-                        "text": "ربات فعال است ✅"
-                    },
-                    timeout=20
-                )
+                if text in ["کانال", "channel", "/channel"]:
 
-                print("پیام ارسال شد")
+                    requests.post(
+                        API_URL + "sendMessage",
+                        json={
+                            "chat_id": chat_id,
+                            "text":
+                                "📢 کانال متاتانک\n\n"
+                                "🔥 اخبار و اطلاعات بازی\n\n"
+                                "🔗 @mtatank"
+                        },
+                        timeout=20
+                    )
+
+                    print("پیام کانال ارسال شد")
 
         time.sleep(2)
 
