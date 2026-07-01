@@ -5,12 +5,11 @@ from threading import Thread
 
 # توکن ربات
 TOKEN = "BIBDIH0SCWTOUMNTTDUXFMRJSFHLCWVFFAUWITUVUIOJAICHDZFOWYSRYHOFOQLW"
-
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-# --------------------
+# -------------------
 # سرور برای Render
-# --------------------
+# -------------------
 app = Flask(__name__)
 
 @app.route("/")
@@ -20,21 +19,21 @@ def home():
 def run_web():
     app.run(host="0.0.0.0", port=10000)
 
-Thread(target=run_web).start()
+Thread(target=run_web, daemon=True).start()
 
-# --------------------
+# -------------------
 # ربات
-# --------------------
-last_event_id = None
+# -------------------
+last_offset = None
 
 print("MetaTank Bot Started")
 
 while True:
     try:
-        payload = {"limit": 10}
+        payload = {}
 
-        if last_event_id:
-            payload["start_id"] = last_event_id
+        if last_offset:
+            payload["offset_id"] = last_offset
 
         response = requests.post(
             API_URL + "getUpdates",
@@ -45,31 +44,34 @@ while True:
         result = response.json()
 
         if "data" in result:
-            for update in result["data"]:
+            data = result["data"]
 
-                last_event_id = update.get("event_id")
+            if "next_offset_id" in data:
+                last_offset = data["next_offset_id"]
 
-                if "message" not in update:
+            updates = data.get("updates", [])
+
+            for update in updates:
+
+                if update.get("type") != "NewMessage":
                     continue
 
-                message = update["message"]
-                chat_id = message.get("chat_id")
-                text = message.get("text", "").strip()
+                chat_id = update["chat_id"]
+                text = update["new_message"]["text"].strip()
 
-                print(text)
+                print("پیام:", text)
 
                 answer = None
 
                 if text == "/start":
-                    answer = """
-🎮 به ربات MetaTank خوش آمدید
-
-📢 کانال ما
-🏆 کانال رسمی
-📚 کانال آموزشی
-ℹ️ درباره ما
-🎮 درباره بازی
-"""
+                    answer = (
+                        "🎮 به ربات MetaTank خوش آمدید\n\n"
+                        "📢 کانال ما\n"
+                        "🏆 کانال رسمی\n"
+                        "📚 کانال آموزشی\n"
+                        "ℹ️ درباره ما\n"
+                        "🎮 درباره بازی"
+                    )
 
                 elif text == "کانال ما":
                     answer = "📢 کانال ما:\n@mtatank"
@@ -81,20 +83,20 @@ while True:
                     answer = "📚 کانال آموزشی:\n@mtatankamuzesh"
 
                 elif text == "درباره ما":
-                    answer = """
-📞 برای سوالات و گزارش باگ:
-@ELXELX240
-
-💡 برای ایده‌ها و ارتباط با ادمین:
-@ll24llll
-"""
+                    answer = (
+                        "📞 برای سوالات و گزارش باگ:\n"
+                        "@ELXELX240\n\n"
+                        "💡 برای ایده و ارتباط با ادمین:\n"
+                        "@ll24llll"
+                    )
 
                 elif text == "درباره بازی":
-                    answer = """
-🎮 MetaTank
-
-متاتانک یک بازی تانکی آنلاین است که بازیکنان در آن با استفاده از تانک‌های مختلف به نبرد می‌پردازند، مراحل و چالش‌ها را پشت سر می‌گذارند و مهارت‌های خود را ارتقا می‌دهند.
-"""
+                    answer = (
+                        "🎮 MetaTank\n\n"
+                        "متاتانک یک بازی تانکی آنلاین است که "
+                        "بازیکنان در آن با تانک‌های مختلف مبارزه می‌کنند، "
+                        "مراحل را پشت سر می‌گذارند و مهارت‌های خود را ارتقا می‌دهند."
+                    )
 
                 if answer:
                     requests.post(
