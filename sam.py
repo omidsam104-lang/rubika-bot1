@@ -38,24 +38,5 @@ while True:
 
                 print("پیام:", text)
 
-                if text in ["کانال", "channel", "/channel"]:
-
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text":
-                                "📢 کانال متاتانک\n\n"
-                                "🔥 اخبار و اطلاعات بازی\n\n"
-                                "🔗 @mtatank"
-                        },
-                        timeout=20
-                    )
-
-                    print("پیام کانال ارسال شد")
-
-        time.sleep(2)
-
-    except Exception as e:
-        print("خطا:", e)
-        time.sleep(5)
+                # کانال ما
+                if text in ["کانال ما", "
