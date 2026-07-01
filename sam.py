@@ -1,12 +1,33 @@
 import requests
 import time
+from flask import Flask
+from threading import Thread
 
+# توکن ربات
 TOKEN = "BIBDIH0SCWTOUMNTTDUXFMRJSFHLCWVFFAUWITUVUIOJAICHDZFOWYSRYHOFOQLW"
+
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
+# --------------------
+# سرور برای Render
+# --------------------
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "MetaTank Bot Online"
+
+def run_web():
+    app.run(host="0.0.0.0", port=10000)
+
+Thread(target=run_web).start()
+
+# --------------------
+# ربات
+# --------------------
 last_event_id = None
 
-print("🤖 MetaTank Bot Started")
+print("MetaTank Bot Started")
 
 while True:
     try:
@@ -22,7 +43,6 @@ while True:
         )
 
         result = response.json()
-        print(result)
 
         if "data" in result:
             for update in result["data"]:
@@ -36,83 +56,54 @@ while True:
                 chat_id = message.get("chat_id")
                 text = message.get("text", "").strip()
 
-                print("پیام:", text)
+                print(text)
 
-                # کانال ما
-                if text in ["کانال ما", "کانال", "/channel"]:
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text": "📢 کانال ما:\n@mtatank"
-                        }
-                    )
+                answer = None
 
-                # کانال رسمی
+                if text == "/start":
+                    answer = """
+🎮 به ربات MetaTank خوش آمدید
+
+📢 کانال ما
+🏆 کانال رسمی
+📚 کانال آموزشی
+ℹ️ درباره ما
+🎮 درباره بازی
+"""
+
+                elif text == "کانال ما":
+                    answer = "📢 کانال ما:\n@mtatank"
+
                 elif text == "کانال رسمی":
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text": "⭐ کانال رسمی:\n@metatank"
-                        }
-                    )
+                    answer = "🏆 کانال رسمی:\n@metatank"
 
-                # کانال آموزشی
                 elif text == "کانال آموزشی":
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text": "📚 کانال آموزشی:\n@mtatankamuzesh"
-                        }
-                    )
+                    answer = "📚 کانال آموزشی:\n@mtatankamuzesh"
 
-                # درباره ما
                 elif text == "درباره ما":
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text":
-                                "📞 ارتباط با ما\n\n"
-                                "🔹 برای سوالات و گزارش باگ:\n"
-                                "@ELXELX240\n\n"
-                                "🔹 برای ایده و ارتباط با ادمین:\n"
-                                "@ll24llll"
-                        }
-                    )
+                    answer = """
+📞 برای سوالات و گزارش باگ:
+@ELXELX240
 
-                # درباره بازی
+💡 برای ایده‌ها و ارتباط با ادمین:
+@ll24llll
+"""
+
                 elif text == "درباره بازی":
-                    requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text":
-                                "🎮 متاتانک یک بازی تانکی آنلاین و رقابتی است.\n\n"
-                                "⚔️ نبردهای چندنفره\n"
-                                "🏆 رقابت با بازیکنان\n"
-                                "🔧 ارتقای تجهیزات\n"
-                                "🧠 نیازمند مهارت و استراتژی"
-                        }
-                    )
+                    answer = """
+🎮 MetaTank
 
-                # استارت
-                elif text in ["/start", "شروع", "استارت"]:
+متاتانک یک بازی تانکی آنلاین است که بازیکنان در آن با استفاده از تانک‌های مختلف به نبرد می‌پردازند، مراحل و چالش‌ها را پشت سر می‌گذارند و مهارت‌های خود را ارتقا می‌دهند.
+"""
+
+                if answer:
                     requests.post(
                         API_URL + "sendMessage",
                         json={
                             "chat_id": chat_id,
-                            "text":
-                                "🤖 به ربات MetaTank خوش آمدید.\n\n"
-                                "دستورات:\n"
-                                "• کانال ما\n"
-                                "• کانال رسمی\n"
-                                "• کانال آموزشی\n"
-                                "• درباره ما\n"
-                                "• درباره بازی"
-                        }
+                            "text": answer
+                        },
+                        timeout=20
                     )
 
         time.sleep(2)
