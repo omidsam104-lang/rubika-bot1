@@ -21,19 +21,16 @@ def run_web():
 
 Thread(target=run_web, daemon=True).start()
 
-# -------------------
-# ربات
-# -------------------
-last_offset = None
+print("🤖 MetaTank Bot Started")
 
-print("MetaTank Bot Started")
+last_event_id = None
 
 while True:
     try:
-        payload = {}
+        payload = {"limit": 10}
 
-        if last_offset:
-            payload["offset_id"] = last_offset
+        if last_event_id:
+            payload["start_id"] = last_event_id
 
         response = requests.post(
             API_URL + "getUpdates",
@@ -42,22 +39,32 @@ while True:
         )
 
         result = response.json()
+        print(result)
 
         if "data" in result:
-            data = result["data"]
 
-            if "next_offset_id" in data:
-                last_offset = data["next_offset_id"]
-
-            updates = data.get("updates", [])
+            updates = result["data"]
 
             for update in updates:
 
+                if not isinstance(update, dict):
+                    continue
+
+                # ذخیره آخرین شناسه
+                if "event_id" in update:
+                    last_event_id = update["event_id"]
+
+                # فقط پیام‌های جدید
                 if update.get("type") != "NewMessage":
                     continue
 
+                if "new_message" not in update:
+                    continue
+
                 chat_id = update["chat_id"]
-                text = update["new_message"]["text"].strip()
+                text = str(
+                    update["new_message"].get("text", "")
+                ).strip()
 
                 print("پیام:", text)
 
@@ -84,7 +91,7 @@ while True:
 
                 elif text == "درباره ما":
                     answer = (
-                        "📞 برای سوالات و گزارش باگ:\n"
+                        "📞 برای سوال و گزارش باگ:\n"
                         "@ELXELX240\n\n"
                         "💡 برای ایده و ارتباط با ادمین:\n"
                         "@ll24llll"
@@ -94,8 +101,9 @@ while True:
                     answer = (
                         "🎮 MetaTank\n\n"
                         "متاتانک یک بازی تانکی آنلاین است که "
-                        "بازیکنان در آن با تانک‌های مختلف مبارزه می‌کنند، "
-                        "مراحل را پشت سر می‌گذارند و مهارت‌های خود را ارتقا می‌دهند."
+                        "بازیکنان در آن با تانک‌های مختلف "
+                        "مبارزه می‌کنند و مهارت‌های خود را "
+                        "ارتقا می‌دهند."
                     )
 
                 if answer:
