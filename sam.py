@@ -4,13 +4,15 @@ from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
 
+# ======================
 # توکن ربات
+# ======================
 TOKEN = "BIBDIH0SCWTOUMNTTDUXFMRJSFHLCWVFFAUWITUVUIOJAICHDZFOWYSRYHOFOQLW"
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-# -------------------
+# ======================
 # سرور Render
-# -------------------
+# ======================
 app = Flask(__name__)
 
 @app.route("/")
@@ -22,10 +24,11 @@ def run_web():
 
 Thread(target=run_web, daemon=True).start()
 
-# -------------------
+# ======================
 # گیم مود
-# -------------------
+# ======================
 def get_game_mode():
+
     modes = [
         "👥 ۲ به ۲",
         "👤 ۳ نفره",
@@ -49,8 +52,8 @@ def get_game_mode():
         (now - start).total_seconds() // 7200
     )
 
-    current_index = elapsed % 4
-    next_index = (current_index + 1) % 4
+    current = elapsed % 4
+    next_mode = (current + 1) % 4
 
     current_time = (
         start + timedelta(hours=2 * elapsed)
@@ -63,26 +66,27 @@ def get_game_mode():
     return (
         "🎮 گیم مود متاتانک\n\n"
         f"🟢 گیم مود فعلی:\n"
-        f"{modes[current_index]}\n"
+        f"{modes[current]}\n"
         f"⏰ شروع: {current_time}\n\n"
         f"🔜 گیم مود بعدی:\n"
-        f"{modes[next_index]}\n"
+        f"{modes[next_mode]}\n"
         f"⏰ شروع: {next_time}"
     )
 
-# -------------------
+# ======================
 # ربات
-# -------------------
+# ======================
 last_event_id = None
 
 print("🤖 MetaTank Bot Started")
 
 while True:
-    try:
-        payload = {"limit": 10}
 
-        if last_event_id:
-            payload["start_id"] = last_event_id
+    try:
+
+        payload = {
+            "limit": 10
+        }
 
         response = requests.post(
             API_URL + "getUpdates",
@@ -91,87 +95,125 @@ while True:
         )
 
         result = response.json()
-        print(result)
 
-        if "data" in result:
+        if "data" not in result:
+            time.sleep(2)
+            continue
 
-            updates = result["data"]
+        updates = result["data"]
 
-            for update in updates:
+        for update in updates:
 
-                if not isinstance(update, dict):
-                    continue
+            if not isinstance(update, dict):
+                continue
 
-                if "event_id" in update:
-                    last_event_id = update["event_id"]
+            if "event_id" in update:
+                last_event_id = update["event_id"]
 
-                if update.get("type") != "NewMessage":
-                    continue
+            if update.get("type") != "NewMessage":
+                continue
 
-                if "new_message" not in update:
-                    continue
+            if "new_message" not in update:
+                continue
 
-                chat_id = update["chat_id"]
-                text = str(
-                    update["new_message"].get("text", "")
-                ).strip()
+            chat_id = update["chat_id"]
 
-                print("پیام:", text)
+            text = str(
+                update["new_message"].get("text", "")
+            ).strip()
 
-                answer = None
+            print("پیام:", text)
 
-                if text == "/start":
-                    answer = (
-                        "🎮 به ربات MetaTank خوش آمدید\n\n"
-                        "📢 کانال ما\n"
-                        "🏆 کانال رسمی\n"
-                        "📚 کانال آموزشی\n"
-                        "🎮 گیم مود\n"
-                        "ℹ️ درباره ما\n"
-                        "🎮 درباره بازی"
-                    )
+            answer = None
 
-                elif text == "کانال ما":
-                    answer = "📢 کانال ما:\n@mtatank"
+            # ======================
+            # استارت
+            # ======================
+            if text == "/start":
 
-                elif text == "کانال رسمی":
-                    answer = "🏆 کانال رسمی:\n@metatank"
+                answer = (
+                    "🎮 به ربات META TANK خوش آمدید\n\n"
+                    "شما می‌توانید از قابلیت‌های زیر استفاده کنید:\n\n"
+                    "📢 کانال ما\n"
+                    "🏆 کانال رسمی\n"
+                    "📚 کانال آموزشی\n"
+                    "🎮 گیم مود\n"
+                    "ℹ️ درباره ما\n"
+                    "🎯 درباره بازی\n\n"
+                    "برای استفاده، نام هر بخش را ارسال کنید."
+                )
 
-                elif text == "کانال آموزشی":
-                    answer = "📚 کانال آموزشی:\n@mtatankamuzesh"
+            # ======================
+            # کانال ها
+            # ======================
+            elif text == "کانال ما":
+                answer = (
+                    "📢 کانال ما:\n"
+                    "@mtatank"
+                )
 
-                elif text in ["گیم مود", "گیم‌مود", "/game"]:
-                    answer = get_game_mode()
+            elif text == "کانال رسمی":
+                answer = (
+                    "🏆 کانال رسمی:\n"
+                    "@metatank"
+                )
 
-                elif text == "درباره ما":
-                    answer = (
-                        "📞 برای سوال و گزارش باگ:\n"
-                        "@ELXELX240\n\n"
-                        "💡 برای ایده و ارتباط با ادمین:\n"
-                        "@ll24llll"
-                    )
+            elif text == "کانال آموزشی":
+                answer = (
+                    "📚 کانال آموزشی:\n"
+                    "@mtatankamuzesh"
+                )
 
-                elif text == "درباره بازی":
-                    answer = (
-                        "🎮 MetaTank\n\n"
-                        "متاتانک یک بازی تانکی آنلاین است "
-                        "که بازیکنان در آن با تانک‌های مختلف "
-                        "مبارزه می‌کنند و مهارت‌های خود را "
-                        "ارتقا می‌دهند."
-                    )
+            # ======================
+            # گیم مود
+            # ======================
+            elif text in [
+                "گیم مود",
+                "گیم‌مود",
+                "/game"
+            ]:
+                answer = get_game_mode()
 
-                if answer:
-                    r = requests.post(
-                        API_URL + "sendMessage",
-                        json={
-                            "chat_id": chat_id,
-                            "text": answer
-                        },
-                        timeout=20
-                    )
+            # ======================
+            # درباره ما
+            # ======================
+            elif text == "درباره ما":
 
-                    print("SEND RESULT:")
-                    print(r.text)
+                answer = (
+                    "📞 برای سوال و گزارش باگ:\n"
+                    "@ELXELX240\n\n"
+                    "💡 برای ایده و ارتباط با ادمین:\n"
+                    "@ll24llll"
+                )
+
+            # ======================
+            # درباره بازی
+            # ======================
+            elif text == "درباره بازی":
+
+                answer = (
+                    "🎮 MetaTank\n\n"
+                    "متاتانک یک بازی تانکی آنلاین است "
+                    "که بازیکنان در آن با تانک‌های مختلف "
+                    "مبارزه می‌کنند و مهارت‌های خود را "
+                    "ارتقا می‌دهند."
+                )
+
+            # ======================
+            # ارسال پیام
+            # ======================
+            if answer:
+
+                r = requests.post(
+                    API_URL + "sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": answer
+                    },
+                    timeout=20
+                )
+
+                print(r.text)
 
         time.sleep(2)
 
