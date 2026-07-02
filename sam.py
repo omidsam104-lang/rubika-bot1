@@ -1,6 +1,5 @@
 import requests
 import time
-print("شروع فایل")
 from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
@@ -157,36 +156,24 @@ while True:
             []
         )
 
-        if not isinstance(
-            updates,
-            list
-        ):
+        if not isinstance(updates, list):
             updates = []
 
         for update in updates:
 
-            if update.get(
-                "type"
-            ) != "NewMessage":
+            if update.get("type") != "NewMessage":
                 continue
 
-            chat_id = update[
-                "chat_id"
-            ]
+            chat_id = update["chat_id"]
 
             text = str(
-                update[
-                    "new_message"
-                ].get(
+                update["new_message"].get(
                     "text",
                     ""
                 )
             ).strip()
 
-            print(
-                "پیام:",
-                text
-            )
+            print("پیام:", text)
 
             answer = None
 
@@ -196,24 +183,30 @@ while True:
             if text == "/start":
 
                 users += 1
-
                 answer = START_MESSAGE
-                elif text == "/help":
 
-    answer = """
+            # ==================
+            # HELP
+            # ==================
+            elif text == "/help":
+
+                answer = """
 📚 راهنمای ربات
 
-/start → منوی اصلی
-/game → گیم مود
-/channels → کانال ها
-/about → درباره ما
-/metatank → درباره بازی
-/stats → آمار
+/start
+/game
+/channels
+/about
+/metatank
+/stats
 """
 
-elif text == "/channels":
+            # ==================
+            # CHANNELS
+            # ==================
+            elif text == "/channels":
 
-    answer = """
+                answer = """
 📢 کانال های META TANK
 
 📢 کانال ما:
@@ -226,9 +219,12 @@ elif text == "/channels":
 @mtatankamuzesh
 """
 
-elif text == "/about":
+            # ==================
+            # ABOUT
+            # ==================
+            elif text == "/about":
 
-    answer = """
+                answer = """
 📞 گزارش باگ:
 @ELXELX240
 
@@ -236,9 +232,12 @@ elif text == "/about":
 @ll24llll
 """
 
-elif text == "/metatank":
+            # ==================
+            # METATANK
+            # ==================
+            elif text == "/metatank":
 
-    answer = """
+                answer = """
 🎮 MetaTank
 
 متاتانک یک بازی آنلاین تانکی است
@@ -246,9 +245,12 @@ elif text == "/metatank":
 مهارت های خود را ارتقا می دهند.
 """
 
-elif text == "/stats":
+            # ==================
+            # STATS
+            # ==================
+            elif text == "/stats":
 
-    answer = f"""
+                answer = f"""
 📊 آمار ربات
 
 👥 کاربران:
@@ -265,24 +267,15 @@ elif text == "/stats":
             # ==================
             elif text == "کانال ما":
 
-                answer = (
-                    "📢 کانال ما:\n"
-                    "@mtatank"
-                )
+                answer = "📢 کانال ما:\n@mtatank"
 
             elif text == "کانال رسمی":
 
-                answer = (
-                    "🏆 کانال رسمی:\n"
-                    "@metatank"
-                )
+                answer = "🏆 کانال رسمی:\n@metatank"
 
             elif text == "کانال آموزشی":
 
-                answer = (
-                    "📚 کانال آموزشی:\n"
-                    "@mtatankamuzesh"
-                )
+                answer = "📚 کانال آموزشی:\n@mtatankamuzesh"
 
             # ==================
             # گیم مود
@@ -294,10 +287,7 @@ elif text == "/stats":
             ]:
 
                 game_requests += 1
-
-                answer = (
-                    get_game_mode()
-                )
+                answer = get_game_mode()
 
             # ==================
             # آمار
@@ -365,32 +355,19 @@ elif text == "/stats":
                     "/start"
                 )
 
-            r = requests.post(
-                API_URL +
-                "sendMessage",
+            requests.post(
+                API_URL + "sendMessage",
                 json={
-                    "chat_id":
-                    chat_id,
-                    "text":
-                    answer
+                    "chat_id": chat_id,
+                    "text": answer
                 },
                 timeout=20
-            )
-
-            print(
-                "SEND:",
-                r.text
             )
 
         time.sleep(1)
 
     except Exception as e:
 
-        print(
-            "خطا:",
-            e
-        )
-
+        print("خطا:", e)
         traceback.print_exc()
-
         time.sleep(5)
