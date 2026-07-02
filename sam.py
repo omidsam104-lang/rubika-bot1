@@ -1,9 +1,9 @@
 import requests
 import time
+import traceback
 from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
-import traceback
 
 # ==================================
 # توکن ربات
@@ -29,7 +29,6 @@ Thread(target=run_web, daemon=True).start()
 # گیم مود
 # ==================================
 def get_game_mode():
-
     modes = [
         "👥 ۲ به ۲",
         "👤 ۳ نفره",
@@ -38,34 +37,18 @@ def get_game_mode():
     ]
 
     now = datetime.now()
-
-    start = datetime(
-        now.year,
-        now.month,
-        now.day,
-        19,
-        30
-    )
+    start = datetime(now.year, now.month, now.day, 19, 30)
 
     while start > now:
         start -= timedelta(days=1)
 
-    passed = int(
-        (now - start).total_seconds() // 7200
-    )
+    passed = int((now - start).total_seconds() // 7200)
 
     current = passed % len(modes)
     nxt = (current + 1) % len(modes)
 
-    current_time = (
-        start +
-        timedelta(hours=passed * 2)
-    )
-
-    next_time = (
-        start +
-        timedelta(hours=(passed + 1) * 2)
-    )
+    current_time = start + timedelta(hours=passed * 2)
+    next_time = start + timedelta(hours=(passed + 1) * 2)
 
     return f"""
 🎮 گیم مود متاتانک
@@ -80,7 +63,7 @@ def get_game_mode():
 """
 
 # ==================================
-# پیام استارت
+# استارت
 # ==================================
 START_MESSAGE = """
 ╔══════════════╗
@@ -88,8 +71,6 @@ START_MESSAGE = """
 ╚══════════════╝
 
 ✨ به ربات META TANK خوش آمدید
-
-شما می‌توانید از قابلیت‌های زیر استفاده کنید:
 
 📢 کانال ما
 🏆 کانال رسمی
@@ -106,28 +87,17 @@ START_MESSAGE = """
 ━━━━━━━━━━━━━━
 """
 
-# ==================================
-# آمار
-# ==================================
 users = 0
 game_requests = 0
-
-# ==================================
-# ربات
-# ==================================
 last_offset = None
 
 print("🔥 META TANK BOT v2.0 STARTED")
 
 while True:
-
     try:
+        payload = {"limit": 20}
 
-        payload = {
-            "limit": 20
-        }
-
-        if last_offset is not None:
+        if last_offset:
             payload["offset_id"] = last_offset
 
         response = requests.post(
@@ -144,20 +114,10 @@ while True:
 
         data = result["data"]
 
-        next_offset = data.get(
-            "next_offset_id"
-        )
+        if data.get("next_offset_id"):
+            last_offset = data["next_offset_id"]
 
-        if next_offset:
-            last_offset = next_offset
-
-        updates = data.get(
-            "updates",
-            []
-        )
-
-        if not isinstance(updates, list):
-            updates = []
+        updates = data.get("updates", [])
 
         for update in updates:
 
@@ -165,50 +125,35 @@ while True:
                 continue
 
             chat_id = update["chat_id"]
-
             text = str(
-                update["new_message"].get(
-                    "text",
-                    ""
-                )
+                update["new_message"].get("text", "")
             ).strip()
 
             print("پیام:", text)
 
             answer = None
 
-            # ==================
-            # START
-            # ==================
+            # /start
             if text == "/start":
-
                 users += 1
                 answer = START_MESSAGE
 
-            # ==================
-            # HELP
-            # ==================
+            # /help
             elif text == "/help":
-
                 answer = """
 📚 راهنمای ربات
 
-/start
-/game
-/channels
-/about
-/metatank
-/stats
+/start → منوی اصلی
+/game → گیم مود
+/channels → کانال ها
+/about → درباره ما
+/metatank → درباره بازی
+/stats → آمار
 """
 
-            # ==================
-            # CHANNELS
-            # ==================
+            # کانال ها
             elif text == "/channels":
-
                 answer = """
-📢 کانال های META TANK
-
 📢 کانال ما:
 @mtatank
 
@@ -219,11 +164,8 @@ while True:
 @mtatankamuzesh
 """
 
-            # ==================
-            # ABOUT
-            # ==================
+            # درباره ما
             elif text == "/about":
-
                 answer = """
 📞 گزارش باگ:
 @ELXELX240
@@ -232,11 +174,8 @@ while True:
 @ll24llll
 """
 
-            # ==================
-            # METATANK
-            # ==================
+            # درباره بازی
             elif text == "/metatank":
-
                 answer = """
 🎮 MetaTank
 
@@ -245,11 +184,8 @@ while True:
 مهارت های خود را ارتقا می دهند.
 """
 
-            # ==================
-            # STATS
-            # ==================
+            # آمار
             elif text == "/stats":
-
                 answer = f"""
 📊 آمار ربات
 
@@ -262,98 +198,38 @@ while True:
 ⚡ نسخه: 2.0
 """
 
-            # ==================
-            # کانال ها
-            # ==================
-            elif text == "کانال ما":
-
-                answer = "📢 کانال ما:\n@mtatank"
-
-            elif text == "کانال رسمی":
-
-                answer = "🏆 کانال رسمی:\n@metatank"
-
-            elif text == "کانال آموزشی":
-
-                answer = "📚 کانال آموزشی:\n@mtatankamuzesh"
-
-            # ==================
             # گیم مود
-            # ==================
-            elif text in [
-                "گیم مود",
-                "گیم‌مود",
-                "/game"
-            ]:
-
+            elif text in ["/game", "گیم مود", "گیم‌مود"]:
                 game_requests += 1
                 answer = get_game_mode()
 
-            # ==================
-            # آمار
-            # ==================
+            # دکمه های فارسی
+            elif text == "کانال ما":
+                answer = "📢 @mtatank"
+
+            elif text == "کانال رسمی":
+                answer = "🏆 @metatank"
+
+            elif text == "کانال آموزشی":
+                answer = "📚 @mtatankamuzesh"
+
             elif text == "آمار بازی":
-
                 answer = f"""
-📊 آمار ربات
-
-👥 تعداد کاربران:
-{users}
-
-🎮 درخواست گیم مود:
-{game_requests}
+👥 کاربران: {users}
+🎮 درخواست گیم مود: {game_requests}
 """
 
-            # ==================
-            # رتبه بندی
-            # ==================
             elif text == "رتبه بندی":
+                answer = "🏅 این بخش به زودی فعال می‌شود."
 
-                answer = """
-🏅 رتبه بندی
-
-🚧 این بخش بزودی
-فعال خواهد شد.
-"""
-
-            # ==================
-            # درباره ما
-            # ==================
             elif text == "درباره ما":
+                answer = "@ELXELX240"
 
-                answer = """
-📞 گزارش باگ:
-@ELXELX240
-
-💡 ارتباط با ادمین:
-@ll24llll
-"""
-
-            # ==================
-            # درباره بازی
-            # ==================
             elif text == "درباره بازی":
+                answer = "🎮 MetaTank یک بازی آنلاین تانکی است."
 
-                answer = """
-🎮 MetaTank
-
-متاتانک یک بازی آنلاین
-تانکی است که بازیکنان
-در آن مبارزه کرده و
-مهارت های خود را
-ارتقا می دهند.
-"""
-
-            # ==================
-            # دستور ناشناخته
-            # ==================
             else:
-
-                answer = (
-                    "❌ دستور ناشناخته\n\n"
-                    "برای مشاهده منو:\n"
-                    "/start"
-                )
+                answer = "❌ دستور ناشناخته\n/start"
 
             requests.post(
                 API_URL + "sendMessage",
@@ -367,7 +243,6 @@ while True:
         time.sleep(1)
 
     except Exception as e:
-
         print("خطا:", e)
         traceback.print_exc()
         time.sleep(5)
