@@ -1,21 +1,21 @@
 import requests
 import time
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Flask
 from threading import Thread
 
-# =====================================
+# ==========================
 # TOKEN
-# =====================================
+# ==========================
 
 TOKEN = "BIBDIH0SCWTOUMNTTDUXFMRJSFHLCWVFFAUWITUVUIOJAICHDZFOWYSRYHOFOQLW"
 
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-# =====================================
-# WEB SERVER FOR RENDER
-# =====================================
+# ==========================
+# RENDER WEB SERVER
+# ==========================
 
 app = Flask(__name__)
 
@@ -34,99 +34,73 @@ Thread(
     daemon=True
 ).start()
 
-# =====================================
-# STATISTICS
-# =====================================
+# ==========================
+# DATABASE
+# ==========================
 
-users = 0
+users = set()
 game_requests = 0
+last_offset = None
+handled_messages = set()
 
-# =====================================
+# ==========================
+# START MESSAGE
+# ==========================
+
+START_MESSAGE = """
+╔══════════════╗
+🎮 META TANK BOT
+╚══════════════╝
+
+✨ به ربات META TANK خوش آمدید
+
+دستورات:
+
+/game
+/channels
+/about
+/metatank
+/stats
+/help
+
+━━━━━━━━━━━━━━
+🤖 وضعیت: آنلاین 🟢
+⚡ نسخه: 2.1
+━━━━━━━━━━━━━━
+"""
+
+# ==========================
 # GAME MODE
-# =====================================
+# ==========================
 
 def get_game_mode():
 
-    modes = [
-        "🔥 ۵ نفره",
-        "👥 ۲ به ۲",
-        "👤 ۳ نفره",
-        "⚔️ ۳ به ۳"
+    schedule = [
+        ("17:30", "🔥 ۵ نفره"),
+        ("19:30", "👥 ۲ به ۲"),
+        ("21:30", "👤 ۳ نفره"),
+        ("23:30", "⚔️ ۳ به ۳"),
     ]
 
-    now = datetime.now()
+    now = datetime.now().strftime("%H:%M")
 
-    base = datetime(
-        now.year,
-        now.month,
-        now.day,
-        17,
-        30
-    )
+    text = "🎮 برنامه گیم مود متاتانک\n\n"
 
-    if now < base:
-        base -= timedelta(days=1)
+    for hour, mode in schedule:
 
-    passed = int(
-        (now - base).total_seconds() // 7200
-    )
+        if hour <= now:
+            current = mode
 
-    current = passed % 4
-    nxt = (current + 1) % 4
+        text += f"🕒 {hour} ➜ {mode}\n"
 
-    current_time = (
-        base +
-        timedelta(hours=passed * 2)
-    )
+    text += "\n"
+    text += f"🟢 گیم مود فعلی:\n{current}"
 
-    next_time = (
-        current_time +
-        timedelta(hours=2)
-    )
+    return text
 
-    return f"""
-🎮 گیم مود متاتانک
-
-🟢 گیم مود فعلی:
-{modes[current]}
-⏰ ساعت: {current_time.strftime("%H:%M")}
-
-🔜 گیم مود بعدی:
-{modes[nxt]}
-⏰ ساعت: {next_time.strftime("%H:%M")}
-"""
-
-# =====================================
-# START MESSAGE
-# =====================================
-
-START_MESSAGE = """
-╔════════════╗
-🎮 META TANK BOT
-╚════════════╝
-
-✨ به ربات متاتانک خوش آمدید
-
-📢 کانال ما
-🏆 کانال رسمی
-📚 کانال آموزشی
-🎮 گیم مود
-📊 آمار بازی
-🏅 رتبه بندی
-ℹ️ درباره ما
-🎮 درباره بازی
-
-━━━━━━━━━━
-
-🤖 وضعیت: آنلاین 🟢
-⚡ نسخه: 2.0
-
-━━━━━━━━━━
-"""
-
-# =====================================
+# ==========================
 # SEND MESSAGE
-# =====================================
+# ==========================
 
 def send(chat_id, text):
 
@@ -141,16 +115,14 @@ def send(chat_id, text):
             timeout=20
         )
 
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
-# =====================================
-# MAIN BOT
-# =====================================
+# ==========================
+# BOT
+# ==========================
 
-last_offset = None
-
-print("🔥 META TANK BOT STARTED")
+print("🔥 META TANK BOT v2.1 STARTED")
 
 while True:
 
@@ -177,45 +149,73 @@ while True:
 
         data = result["data"]
 
-        if data.get("next_offset_id"):
-            last_offset = data["next_offset_id"]
-
         updates = data.get(
             "updates",
             []
         )
+
+        if data.get("next_offset_id"):
+            last_offset = data["next_offset_id"]
 
         for update in updates:
 
             if update.get("type") != "NewMessage":
                 continue
 
-            chat_id = update["chat_id"]
+            message_id = str(
+                update.get(
+                    "message_id",
+                    ""
+                )
+            )
+
+            if message_id in handled_messages:
+                continue
+
+            handled_messages.add(
+                message_id
+            )
+
+            if len(
+                handled_messages
+            ) > 500:
+                handled_messages.clear()
+
+            chat_id = update[
+                "chat_id"
+            ]
 
             text = str(
-                update["new_message"].get(
+                update[
+                    "new_message"
+                ].get(
                     "text",
                     ""
                 )
             ).strip()
 
-            print("MESSAGE:", text)
+            print(
+                "MESSAGE:",
+                text
+            )
+
+            users.add(
+                chat_id
+            )
 
             answer = None
 
-            # =================
+            # ===================
             # START
-            # =================
+            # ===================
 
             if text == "/start":
 
-                users += 1
-
                 answer = START_MESSAGE
 
-            # =================
+            # ===================
             # HELP
-            # =================
+            # ===================
 
             elif text == "/help":
 
@@ -230,9 +230,9 @@ while True:
 /stats
 """
 
-            # =================
+            # ===================
             # GAME
-            # =================
+            # ===================
 
             elif text in [
                 "/game",
@@ -244,15 +244,13 @@ while True:
 
                 answer = get_game_mode()
 
-            # =================
+            # ===================
             # CHANNELS
-            # =================
+            # ===================
 
             elif text == "/channels":
 
                 answer = """
-📢 کانال ها
-
 📢 کانال ما:
 @mtatank
 
@@ -263,9 +261,9 @@ while True:
 @mtatankamuzesh
 """
 
-            # =================
+            # ===================
             # ABOUT
-            # =================
+            # ===================
 
             elif text == "/about":
 
@@ -277,9 +275,9 @@ while True:
 @ll24llll
 """
 
-            # =================
+            # ===================
             # METATANK
-            # =================
+            # ===================
 
             elif text == "/metatank":
 
@@ -290,9 +288,9 @@ while True:
 آنلاین تانکی است.
 """
 
-            # =================
+            # ===================
             # STATS
-            # =================
+            # ===================
 
             elif text == "/stats":
 
@@ -300,18 +298,18 @@ while True:
 📊 آمار
 
 👥 کاربران:
-{users}
+{len(users)}
 
 🎮 درخواست گیم مود:
 {game_requests}
 
 ⚡ نسخه:
-2.0
+2.1
 """
 
-            # =================
+            # ===================
             # UNKNOWN
-            # =================
+            # ===================
 
             else:
 
