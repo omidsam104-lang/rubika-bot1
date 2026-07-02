@@ -198,6 +198,67 @@ while True:
                 users += 1
 
                 answer = START_MESSAGE
+                elif text == "/help":
+
+    answer = """
+📚 راهنمای ربات
+
+/start → منوی اصلی
+/game → گیم مود
+/channels → کانال ها
+/about → درباره ما
+/metatank → درباره بازی
+/stats → آمار
+"""
+
+elif text == "/channels":
+
+    answer = """
+📢 کانال های META TANK
+
+📢 کانال ما:
+@mtatank
+
+🏆 کانال رسمی:
+@metatank
+
+📚 کانال آموزشی:
+@mtatankamuzesh
+"""
+
+elif text == "/about":
+
+    answer = """
+📞 گزارش باگ:
+@ELXELX240
+
+💡 ارتباط با ادمین:
+@ll24llll
+"""
+
+elif text == "/metatank":
+
+    answer = """
+🎮 MetaTank
+
+متاتانک یک بازی آنلاین تانکی است
+که بازیکنان در آن مبارزه کرده و
+مهارت های خود را ارتقا می دهند.
+"""
+
+elif text == "/stats":
+
+    answer = f"""
+📊 آمار ربات
+
+👥 کاربران:
+{users}
+
+🎮 درخواست گیم مود:
+{game_requests}
+
+⚡ نسخه: 2.0
+"""
 
             # ==================
             # کانال ها
