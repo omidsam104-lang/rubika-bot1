@@ -9,7 +9,7 @@ from threading import Thread
 # TOKEN
 # =====================================
 
-TOKEN = "توکن_خودت_را_اینجا_قرار_بده"
+TOKEN = "BIBDIH0MUOMDTRTXIWQGFYSNKUJJJRCVJSDBUOGCYYJUXBTVRNPDSBETNPJDOQIT"
 
 API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
