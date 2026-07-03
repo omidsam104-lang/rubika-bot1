@@ -2,3 +2,6 @@ rubika-bot-api
 orjson
 requests
 flask
+aiohttp
+aiofiles
+pytz
