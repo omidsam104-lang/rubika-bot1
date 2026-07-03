@@ -1,57 +1,227 @@
-from datetime import datetime
+import requests
+import time
+import traceback
+from flask import Flask
+from threading import Thread
+
+# =====================================
+# TOKEN
+# =====================================
 
 TOKEN = "BIBDIH0MUOMDTRTXIWQGFYSNKUJJJRCVJSDBUOGCYYJUXBTVRNPDSBETNPJDOQIT"
 
-CHANNEL = "@mtatank"
-OFFICIAL = "@metatank"
-EDU = "@mtatankamuzesh"
+API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
 
-def game_mode():
+# =====================================
+# WEB SERVER
+# =====================================
 
-    hour = datetime.now().hour
+app = Flask(__name__)
 
-    if 0 <= hour < 6:
-        return "🎮 گیم مود: 2 به 2"
+@app.route("/")
+def home():
+    return "META TANK BOT ONLINE"
 
-    elif 6 <= hour < 12:
-        return "🎮 گیم مود: 3 نفره"
+def run_web():
+    app.run(
+        host="0.0.0.0",
+        port=10000
+    )
 
-    elif 12 <= hour < 18:
-        return "🎮 گیم مود: 4 نفره"
+Thread(
+    target=run_web,
+    daemon=True
+).start()
 
-    else:
-        return "🎮 گیم مود: 5 نفره"
+# =====================================
+# START
+# =====================================
 
-
-def answer(text):
-
-    text = text.strip()
-
-    if text in ["استارت", "/start"]:
-        return """
-🎮 ربات متاتانک
+START_MESSAGE = """
+🎮 به ربات متاتانک خوش آمدید
 
 دستورات:
 
+🎮 گیم مود
 📢 کانال ما
 🏆 کانال رسمی
 📚 کانال آموزشی
-🎮 گیم مود
 """
 
-    elif text == "گیم مود":
-        return game_mode()
+# =====================================
+# GAME MODE
+# =====================================
 
-    elif text == "کانال ما":
-        return f"📢 {CHANNEL}"
+GAME_MODE = """
+🎮 جدول گیم مود متاتانک
 
-    elif text == "کانال رسمی":
-        return f"🏆 {OFFICIAL}"
+🕐 01:30 → 🔥 5 نفره
+🕒 03:30 → 👥 2 به 2
+🕔 05:30 → 👤 3 نفره
+🕖 07:30 → ⚔️ 3 به 3
 
-    elif text == "کانال آموزشی":
-        return f"📚 {EDU}"
+🕘 09:30 → 🔥 5 نفره
+🕚 11:30 → 👥 2 به 2
+🕐 13:30 → 👤 3 نفره
+🕒 15:30 → ⚔️ 3 به 3
 
-    return "❌ دستور ناشناخته"
+🕔 17:30 → 🔥 5 نفره
+🕖 19:30 → 👥 2 به 2
+🕘 21:30 → 👤 3 نفره
+🕚 23:30 → ⚔️ 3 به 3
 
+♻️ سپس دوباره تکرار می‌شود.
+"""
 
-print("🔥 ربات متاتانک آماده است")
+# =====================================
+# SEND
+# =====================================
+
+def send(chat_id, text):
+
+    try:
+
+        requests.post(
+            API_URL + "sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": text
+            },
+            timeout=20
+        )
+
+    except Exception as e:
+        print(e)
+
+# =====================================
+# BOT
+# =====================================
+
+last_offset = None
+processed = set()
+
+print("🔥 META TANK BOT STARTED")
+
+while True:
+
+    try:
+
+        payload = {
+            "limit": 20
+        }
+
+        if last_offset:
+            payload["offset_id"] = last_offset
+
+        response = requests.post(
+            API_URL + "getUpdates",
+            json=payload,
+            timeout=20
+        )
+
+        # ضد JSON ERROR
+        if not response.text.strip():
+            time.sleep(2)
+            continue
+
+        try:
+            result = response.json()
+        except:
+            print("JSON ERROR")
+            print(response.text)
+            time.sleep(5)
+            continue
+
+        if "data" not in result:
+            time.sleep(2)
+            continue
+
+        data = result["data"]
+
+        if data.get("next_offset_id"):
+            last_offset = data["next_offset_id"]
+
+        updates = data.get(
+            "updates",
+            []
+        )
+
+        for update in updates:
+
+            uid = str(update)
+
+            # ضد اسپم
+            if uid in processed:
+                continue
+
+            processed.add(uid)
+
+            if len(processed) > 100:
+                processed.clear()
+
+            if update.get("type") != "NewMessage":
+                continue
+
+            chat_id = update["chat_id"]
+
+            text = str(
+                update["new_message"].get(
+                    "text",
+                    ""
+                )
+            ).strip()
+
+            print(text)
+
+            answer = None
+
+            if text in [
+                "/start",
+                "استارت"
+            ]:
+
+                answer = START_MESSAGE
+
+            elif text == "گیم مود":
+
+                answer = GAME_MODE
+
+            elif text == "کانال ما":
+
+                answer = """
+📢 کانال ما
+
+@mtatank
+"""
+
+            elif text == "کانال رسمی":
+
+                answer = """
+🏆 کانال رسمی
+
+@metatank
+"""
+
+            elif text == "کانال آموزشی":
+
+                answer = """
+📚 کانال آموزشی
+
+@mtatankamuzesh
+"""
+
+            if answer:
+                send(
+                    chat_id,
+                    answer
+                )
+
+        time.sleep(2)
+
+    except Exception as e:
+
+        print(e)
+
+        traceback.print_exc()
+
+        time.sleep(5)
