@@ -1,341 +1,100 @@
+from flask import Flask, request
 import requests
+import threading
 import time
-import traceback
-from datetime import datetime, timedelta
-from flask import Flask
-from threading import Thread
-
-# =====================================
-# TOKEN
-# =====================================
 
 TOKEN = "BIBDIH0MUOMDTRTXIWQGFYSNKUJJJRCVJSDBUOGCYYJUXBTVRNPDSBETNPJDOQIT"
 
-API_URL = f"https://botapi.rubika.ir/v3/{TOKEN}/"
-
-# =====================================
-# WEB SERVER FOR RENDER
-# =====================================
-
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return "META TANK BOT ONLINE"
+# تنظیمات کانال‌ها
+CHANNEL = "@mtatank"
+OFFICIAL_CHANNEL = "@metatank"
+EDU_CHANNEL = "@mtatankamuzesh"
 
-def run_web():
-    app.run(
-        host="0.0.0.0",
-        port=10000
-    )
+# گیم مودها (24 ساعته)
+GAME_MODES = [
+    ("2 به 2", "11:30"),
+    ("3 نفره", "13:30"),
+    ("4 نفره", "15:30"),
+    ("2 به 2", "17:30"),
+    ("3 نفره", "19:30"),
+    ("4 نفره", "21:30"),
+]
 
-Thread(
-    target=run_web,
-    daemon=True
-).start()
-
-# =====================================
-# STATISTICS
-# =====================================
-
-users = 0
-game_requests = 0
-
-# =====================================
-# GAME MODE
-# =====================================
-
-def get_game_mode():
-
-    modes = [
-        "🔥 ۵ نفره",
-        "👥 ۲ به ۲",
-        "👤 ۳ نفره",
-        "⚔️ ۳ به ۳"
-    ]
-
-    now = datetime.now()
-
-    base = datetime(
-        now.year,
-        now.month,
-        now.day,
-        17,
-        30
-    )
-
-    if now < base:
-        base -= timedelta(days=1)
-
-    passed = int(
-        (now - base).total_seconds() // 7200
-    )
-
-    current = passed % 4
-    nxt = (current + 1) % 4
-
-    current_time = (
-        base +
-        timedelta(hours=passed * 2)
-    )
-
-    next_time = (
-        current_time +
-        timedelta(hours=2)
-    )
-
-    return f"""
-🎮 گیم مود متاتانک
-
-🟢 گیم مود فعلی:
-{modes[current]}
-⏰ ساعت: {current_time.strftime("%H:%M")}
-
-🔜 گیم مود بعدی:
-{modes[nxt]}
-⏰ ساعت: {next_time.strftime("%H:%M")}
-"""
-
-# =====================================
-# START MESSAGE
-# =====================================
-
-START_MESSAGE = """
-╔════════════╗
-🎮 META TANK BOT
-╚════════════╝
-
-✨ به ربات متاتانک خوش آمدید
-
-📢 کانال ما
-🏆 کانال رسمی
-📚 کانال آموزشی
-🎮 گیم مود
-📊 آمار بازی
-🏅 رتبه بندی
-ℹ️ درباره ما
-🎮 درباره بازی
-
-━━━━━━━━━━
-
-🤖 وضعیت: آنلاین 🟢
-⚡ نسخه: 2.0
-
-━━━━━━━━━━
-"""
-
-# =====================================
-# SEND MESSAGE
-# =====================================
-
-def send(chat_id, text):
-
+def send_message(chat_id, text):
+    url = "https://messengerg2c56.iranlms.ir/"
+    data = {
+        "api_version": "5",
+        "auth": TOKEN,
+        "method": "sendMessage",
+        "data": {
+            "object_guid": chat_id,
+            "text": text
+        }
+    }
     try:
-
-        requests.post(
-            API_URL + "sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": text
-            },
-            timeout=20
-        )
-
+        requests.post(url, json=data)
     except:
         pass
 
-# =====================================
-# MAIN BOT
-# =====================================
+def get_current_mode():
+    current_hour = time.localtime().tm_hour
+    for mode, t in GAME_MODES:
+        hour = int(t.split(":")[0])
+        if current_hour < hour:
+            return mode, t
 
-last_offset = None
+    return GAME_MODES[0]
 
-print("🔥 META TANK BOT STARTED")
-
-while True:
+@app.route("/", methods=["POST", "GET"])
+def home():
+    if request.method == "GET":
+        return "ربات روشن است"
 
     try:
+        data = request.json
 
-        payload = {
-            "limit": 20
-        }
+        chat_id = data["data"]["author_object_guid"]
+        text = data["data"]["text"].strip()
 
-        if last_offset:
-            payload["offset_id"] = last_offset
-
-        response = requests.post(
-            API_URL + "getUpdates",
-            json=payload,
-            timeout=20
-        )
-
-        result = response.json()
-
-        if "data" not in result:
-            time.sleep(1)
-            continue
-
-        data = result["data"]
-
-        if data.get("next_offset_id"):
-            last_offset = data["next_offset_id"]
-
-        updates = data.get(
-            "updates",
-            []
-        )
-
-        for update in updates:
-
-            if update.get("type") != "NewMessage":
-                continue
-
-            chat_id = update["chat_id"]
-
-            text = str(
-                update["new_message"].get(
-                    "text",
-                    ""
-                )
-            ).strip()
-
-            print("MESSAGE:", text)
-
-            answer = None
-
-            # =================
-            # START
-            # =================
-
-            if text == "/start":
-
-                users += 1
-
-                answer = START_MESSAGE
-
-            # =================
-            # HELP
-            # =================
-
-            elif text == "/help":
-
-                answer = """
-📚 راهنما
-
-/start
-/game
-/channels
-/about
-/metatank
-/stats
-"""
-
-            # =================
-            # GAME
-            # =================
-
-            elif text in [
-                "/game",
-                "گیم مود",
-                "گیم‌مود"
-            ]:
-
-                game_requests += 1
-
-                answer = get_game_mode()
-
-            # =================
-            # CHANNELS
-            # =================
-
-            elif text == "/channels":
-
-                answer = """
-📢 کانال ها
-
-📢 کانال ما:
-@mtatank
-
-🏆 کانال رسمی:
-@metatank
-
-📚 کانال آموزشی:
-@mtatankamuzesh
-"""
-
-            # =================
-            # ABOUT
-            # =================
-
-            elif text == "/about":
-
-                answer = """
-📞 گزارش باگ:
-@ELXELX240
-
-💡 ارتباط:
-@ll24llll
-"""
-
-            # =================
-            # METATANK
-            # =================
-
-            elif text == "/metatank":
-
-                answer = """
-🎮 MetaTank
-
-متاتانک یک بازی
-آنلاین تانکی است.
-"""
-
-            # =================
-            # STATS
-            # =================
-
-            elif text == "/stats":
-
-                answer = f"""
-📊 آمار
-
-👥 کاربران:
-{users}
-
-🎮 درخواست گیم مود:
-{game_requests}
-
-⚡ نسخه:
-2.0
-"""
-
-            # =================
-            # UNKNOWN
-            # =================
-
-            else:
-
-                answer = """
-❌ دستور ناشناخته
-
-برای شروع:
-/start
-"""
-
-            send(
+        # استارت
+        if text in ["/start", "استارت"]:
+            send_message(
                 chat_id,
-                answer
+                "🎮 سلام!\n\n"
+                "دستورهای ربات:\n"
+                "• گیم مود\n"
+                "• کانال ما\n"
+                "• کانال رسمی\n"
+                "• کانال آموزشی"
             )
 
-        time.sleep(1)
+        # گیم مود
+        elif text == "گیم مود":
+            mode, hour = get_current_mode()
+            send_message(
+                chat_id,
+                f"🎮 گیم مود متاتانک\n\n"
+                f"🟢 گیم مود فعلی:\n"
+                f"👥 {mode}\n"
+                f"⏰ ساعت: {hour}"
+            )
+
+        # کانال‌ها
+        elif text == "کانال ما":
+            send_message(chat_id, f"📢 کانال ما:\n{CHANNEL}")
+
+        elif text == "کانال رسمی":
+            send_message(chat_id, f"🏆 کانال رسمی:\n{OFFICIAL_CHANNEL}")
+
+        elif text == "کانال آموزشی":
+            send_message(chat_id, f"📚 کانال آموزشی:\n{EDU_CHANNEL}")
 
     except Exception as e:
+        print(e)
 
-        print(
-            "ERROR:",
-            e
-        )
+    return "OK"
 
-        traceback.print_exc()
-
-        time.sleep(5)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
