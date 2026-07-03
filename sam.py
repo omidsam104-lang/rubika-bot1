@@ -92,8 +92,8 @@ def send(chat_id, text):
             },
             timeout=20
         )
-    except:
-        pass
+    except Exception as e:
+        print("SEND ERROR:", e)
 
 # =====================================
 # MAIN BOT
@@ -138,6 +138,8 @@ while True:
                 update["new_message"].get("text", "")
             ).strip()
 
+            print("MESSAGE:", text)
+
             answer = None
 
             if text == "/start":
@@ -145,7 +147,6 @@ while True:
                 answer = START_MESSAGE
 
             elif text == "/game":
-                global game_requests
                 game_requests += 1
                 answer = get_game_mode()
 
@@ -176,8 +177,8 @@ while True:
                 answer = """
 🎮 MetaTank
 
-متاتانک یک بازی
-آنلاین تانکی است.
+متاتانک یک بازی آنلاین
+تانکی است.
 """
 
             elif text == "/stats":
@@ -204,7 +205,7 @@ while True:
 /help
 """
 
-            # فقط اگر دستور معتبر بود پاسخ بده
+            # فقط به دستورات معتبر پاسخ بده
             if answer:
                 send(chat_id, answer)
 
