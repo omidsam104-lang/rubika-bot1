@@ -1,3 +1,4 @@
+rubika-bot-api
+orjson
 requests
 flask
-rubika-bot-api
