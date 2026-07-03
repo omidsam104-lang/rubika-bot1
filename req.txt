@@ -1,2 +1,2 @@
-rubika-bot-api
 requests
+flask
