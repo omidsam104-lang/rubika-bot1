@@ -1,5 +1,2 @@
 rubika-bot-api
-orjson
-aiodns
 requests
-flask
